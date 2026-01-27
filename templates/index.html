@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; background-color: #f4f4f9; }
+        h1 { color: #333; text-align: center; }
+        .input-group { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; gap: 10px; flex-wrap: wrap; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex-grow: 1; }
+        button#add-btn { padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button#add-btn:hover { background-color: #218838; }
+        ul { list-style: none; padding: 0; margin-top: 2rem; }
+        li { background: white; border-bottom: 1px solid #eee; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        li:first-child { border-top-left-radius: 8px; border-top-right-radius: 8px; }
+        li:last-child { border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; border-bottom: none; }
+        .delete-btn { background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <h1>📋 TaskList</h1>
+    
+    <div class="input-group">
+        <input type="text" id="title" placeholder="Τίτλος task..." required>
+        <input type="date" id="deadline">
+        <button id="add-btn" onclick="addTask()">Προσθήκη</button>
+    </div>
+
+    <ul id="task-list">
+        </ul>
+
+    <script>
+        const API_URL = '/tasks';
+
+        // 1. fortwnei tis ergasies otan anoigei to app
+        async function loadTasks() {
+            const response = await fetch(API_URL);
+            const tasks = await response.json();
+            const list = document.getElementById('task-list');
+            list.innerHTML = '';
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div>
+                        <strong>${task.title}</strong> <br>
+                        <small>📅 ${task.deadline || 'Χωρίς ημ/νία'}</small>
+                    </div>
+                    <button class="delete-btn" onclick="deleteTask(${task.id})">Διαγραφή</button>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        // 2. prosthetei task
+        async function addTask() {
+            const title = document.getElementById('title').value;
+            const deadline = document.getElementById('deadline').value;
+            if (!title) return alert("Γράψε έναν τίτλο!");
+
+            await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, deadline, username: 'user', description: '' })
+            });
+            
+            document.getElementById('title').value = '';
+            loadTasks();
+        }
+
+        // 3. funct diagrafhs
+        async function deleteTask(id) {
+            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            loadTasks();
+        }
+
+        loadTasks();
+    </script>
+</body>
+</html>
