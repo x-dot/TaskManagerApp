@@ -24,8 +24,7 @@ def index():
 
 @app.route('/tasks', methods=['GET'])
 def get_tasks():
-    tasks = load_tasks()
-    return jsonify(tasks), 200
+    return jsonify(load_tasks())
 
 @app.route('/tasks/<int:task_id>', methods=['GET'])
 def get_task(task_id):

@@ -5,35 +5,94 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Task Manager</title>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; background-color: #f4f4f9; }
-        h1 { color: #333; text-align: center; }
-        .input-group { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; gap: 10px; flex-wrap: wrap; }
-        input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex-grow: 1; }
-        button#add-btn { padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; background-color: #f4f4f9; color: #333; }
+        h1 { text-align: center; color: #444; margin-bottom: 1.5rem; }
+
+        /* --- Toolbar Styles --- */
+        .toolbar {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* Search Section (Left) */
+        .search-group {
+            display: flex;
+            gap: 5px;
+            border-right: 2px solid #eee; /* Διαχωριστική γραμμή */
+            padding-right: 10px;
+        }
+        #searchTaskId { width: 60px; text-align: center; }
+        .btn-search { background-color: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 10px 15px; }
+        .btn-search:hover { background-color: #138496; }
+
+        /* Add Task Section (Right) */
+        .input-group {
+            display: flex;
+            gap: 10px;
+            flex-grow: 1; /* Πιάνει τον υπόλοιπο χώρο */
+        }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        #title { flex-grow: 1; } /* Ο τίτλος μεγαλώνει όσο χρειάζεται */
+        
+        button#add-btn { padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button#add-btn:hover { background-color: #218838; }
-        ul { list-style: none; padding: 0; margin-top: 2rem; }
-        li { background: white; border-bottom: 1px solid #eee; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+
+        /* --- List Styles --- */
+        ul { list-style: none; padding: 0; margin-top: 1.5rem; }
+        li { background: white; border-bottom: 1px solid #eee; padding: 1rem; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
         li:first-child { border-top-left-radius: 8px; border-top-right-radius: 8px; }
         li:last-child { border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; border-bottom: none; }
-        .delete-btn { background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; }
+        li:hover { background-color: #fafafa; }
+        .delete-btn { background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-left: 10px; }
+        .delete-btn:hover { background-color: #c82333; }
+
+        /* --- Search Result Box --- */
+        #searchResult { margin-top: 15px; }
+        .found-task { 
+            border: 2px solid #28a745; 
+            background: #e9f7ef; 
+            padding: 15px; 
+            border-radius: 8px; 
+            position: relative;
+        }
+        .close-search {
+            position: absolute; top: 5px; right: 10px; cursor: pointer; font-weight: bold; color: #666;
+        }
     </style>
 </head>
 <body>
-    <h1>📋 TaskList</h1>
+
+    <h1>📋 Task Manager</h1>
     
-    <div class="input-group">
-        <input type="text" id="title" placeholder="Τίτλος task..." required>
-        <input type="date" id="deadline">
-        <button id="add-btn" onclick="addTask()">Προσθήκη</button>
+    <div class="toolbar">
+        
+        <div class="search-group" title="Αναζήτηση με ID">
+            <input type="number" id="searchTaskId" placeholder="ID">
+            <button class="btn-search" onclick="searchTask()">🔍</button>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="title" placeholder="New task..." required>
+            <input type="date" id="deadline">
+            <button id="add-btn" onclick="addTask()">➕</button>
+        </div>
+
     </div>
 
-    <ul id="task-list">
-        </ul>
+    <div id="searchResult"></div>
+
+    <ul id="task-list"></ul>
 
     <script>
         const API_URL = '/tasks';
 
-        // 1. fortwnei tis ergasies otan anoigei to app
+        // 1. Φόρτωση εργασιών
         async function loadTasks() {
             const response = await fetch(API_URL);
             const tasks = await response.json();
@@ -43,16 +102,17 @@
                 const li = document.createElement('li');
                 li.innerHTML = `
                     <div>
+                        <span style="font-weight:bold; color:#555;">#${task.id}</span> 
                         <strong>${task.title}</strong> <br>
-                        <small>📅 ${task.deadline || 'Χωρίς ημ/νία'}</small>
+                        <small style="color: #888;">📅 ${task.deadline || 'No deadline'}</small>
                     </div>
-                    <button class="delete-btn" onclick="deleteTask(${task.id})">Διαγραφή</button>
+                    <button class="delete-btn" onclick="deleteTask(${task.id})">Delete</button>
                 `;
                 list.appendChild(li);
             });
         }
 
-        // 2. prosthetei task
+        // 2. Προσθήκη Task
         async function addTask() {
             const title = document.getElementById('title').value;
             const deadline = document.getElementById('deadline').value;
@@ -65,15 +125,61 @@
             });
             
             document.getElementById('title').value = '';
+            document.getElementById('deadline').value = '';
             loadTasks();
         }
 
-        // 3. funct diagrafhs
+        // 3. Διαγραφή Task
         async function deleteTask(id) {
-            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-            loadTasks();
+            if(confirm('Σίγουρα θέλεις να διαγράψεις το task ' + id + ';')) {
+                await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                loadTasks();
+                // Αν είναι ανοιχτό το αποτέλεσμα αναζήτησης για αυτό το ID, κλείστο
+                document.getElementById('searchResult').innerHTML = '';
+            }
         }
 
+        // 4. Αναζήτηση Task
+        async function searchTask() {
+            const idInput = document.getElementById('searchTaskId');
+            const resultDiv = document.getElementById('searchResult');
+            const id = idInput.value;
+
+            resultDiv.innerHTML = ''; // Καθαρισμός
+
+            if (!id) {
+                alert("Παρακαλώ δώσε ένα ID");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/tasks/${id}`);
+                
+                if (response.status === 404) {
+                    resultDiv.innerHTML = '<div style="padding:10px; background:#f8d7da; color:#721c24; border-radius:5px;">❌ Το Task με ID ' + id + ' δεν βρέθηκε!</div>';
+                    return;
+                }
+
+                if (!response.ok) throw new Error('Error');
+
+                const task = await response.json();
+                
+                // Εμφάνιση αποτελέσματος
+                resultDiv.innerHTML = `
+                    <div class="found-task">
+                        <span class="close-search" onclick="this.parentElement.remove()">✕</span>
+                        <h4>✅ Βρέθηκε: ${task.title}</h4>
+                        <p><strong>ID:</strong> ${task.id} | <strong>User:</strong> ${task.username}</p>
+                        <p><strong>Περιγραφή:</strong> ${task.description || '-'}</p>
+                        <p><strong>Διορία:</strong> ${task.deadline}</p>
+                    </div>
+                `;
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        // Αρχική φόρτωση
         loadTasks();
     </script>
 </body>
